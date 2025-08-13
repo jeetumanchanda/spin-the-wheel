@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Spin the Wheel</title>
+<link rel="manifest" href="manifest.json">
+<style>
+:root{
+  --bg:#05060a;
+  --panel:#0b1220;
+  --muted:#9aa4b2;
+  --accent:#ffca28;
+  --btn-h:44px;
+  --gap:12px;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:#e6f0ff;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+.app{max-width:980px;margin:12px auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.header{width:100%;text-align:center}
+.last{font-size:14px;color:var(--muted);margin-bottom:6px}
+.wheel-wrap{position:relative;width:min(640px,96%);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#071022,#0b1220);border-radius:14px;padding:14px;box-shadow:0 8px 30px rgba(2,6,23,0.7)}
+canvas{border-radius:50%}
+.center-btn{position:absolute;display:grid;place-items:center;z-index:30;width:110px;height:110px;border-radius:999px;background:linear-gradient(180deg,#ffd27f,#ffb703);color:#2b1000;font-weight:800;border:none;cursor:pointer;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+.center-btn:active{transform:scale(.98)}
+
+/* controls bottom */
+.controls{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:6px}
+.input-row{width:100%;display:flex;gap:12px;align-items:flex-start}
+.names{flex:1;min-height:110px;max-height:180px;width:100%;resize:vertical;padding:10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.06);color:inherit;font-size:15px}
+.actions{display:flex;gap:12px;align-items:flex-start}
+.stack{display:flex;flex-direction:column;gap:8px}
+.btn{height:var(--btn-h);min-width:120px;padding:0 12px;border-radius:8px;border:none;background:#1f2937;color:#e6f0ff;cursor:pointer;font-weight:600}
+.btn.generate{background:linear-gradient(180deg,#2dd4bf,#06b6d4);color:#041018}
+.btn.clear{background:#2b2f36;color:#fff}
+.btn.reset{background:linear-gradient(180deg,#f97316,#ef4444);color:#fff;height:calc(var(--btn-h) * 2 + 8px);align-self:center;padding:0 16px}
+
+/* footer small */
+.footer{width:100%;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:13px}
+.overlay{position:fixed;inset:0;display:grid;place-items:center;background:rgba(2,6,23,0.7);backdrop-filter:blur(6px);z-index:100;opacity:0;pointer-events:none;transition:opacity .18s}
+.overlay.show{opacity:1;pointer-events:auto}
+.result-box{background:linear-gradient(180deg,#fff4d6,#ffd27f);padding:26px 34px;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,0.6);color:#2b1000;min-width:260px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.close-x{position:absolute;top:10px;right:10px;background:transparent;border:none;font-size:20px;cursor:pointer}
+
+/* responsive */
+@media (max-width:520px){
+  .center-btn{width:86px;height:86px;font-size:14px}
+  .names{min-height:90px}
+  .btn{min-width:96px}
+  .btn.reset{height:calc(var(--btn-h) * 2 + 8px)}
+}
+</style>
+</head>
+<body>
+<div class="app" role="application" aria-label="Spin the Wheel app">
+  <div class="header">
+    <div id="lastSelected" class="last">Last selected: —</div>
+  </div>
+
+  <div class="wheel-wrap" id="wheelWrap">
+    <canvas id="wheelCanvas" width="800" height="800" aria-label="Wheel"></canvas>
+    <button class="center-btn" id="spinBtn" aria-label="Spin the wheel">SPIN</button>
+  </div>
+
+  <div class="controls">
+    <div class="input-row">
+      <textarea id="namesInput" class="names" placeholder="Enter one name per line..."></textarea>
+      <div class="actions">
+        <div class="stack" role="group" aria-label="Generate and Clear">
+          <button id="generateBtn" class="btn generate">Generate</button>
+          <button id="clearBtn" class="btn clear">Clear values</button>
+        </div>
+        <button id="resetBtn" class="btn reset" title="Reset wheel">Reset Wheel</button>
+      </div>
+    </div>
+    <div class="footer">
+      <div>Tip: add names, press Generate, then press SPIN</div>
+      <div>Made with ♥</div>
+    </div>
+  </div>
+</div>
+
+<div id="overlay" class="overlay" aria-hidden="true">
+  <div class="result-box" role="dialog" aria-modal="true">
+    <button class="close-x" id="closeOverlay" aria-label="Close">✕</button>
+    <div id="resultText" style="font-size:26px;font-weight:800">NAME</div>
+    <div id="resultSub" style="font-size:14px;color:#5b3b11">Winner</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('wheelCanvas');
+  const ctx = canvas.getContext('2d');
+  const spinBtn = document.getElementById('spinBtn');
+  const generateBtn = document.getElementById('generateBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const namesInput = document.getElementById('namesInput');
+  const overlay = document.getElementById('overlay');
+  const resultText = document.getElementById('resultText');
+  const closeOverlay = document.getElementById('closeOverlay');
+  const lastSelected = document.getElementById('lastSelected');
+
+  let names = [];
+  let segments = [];
+  let colors = [];
+  let angle = 0; // current rotation angle in radians
+  let spinning = false;
+  let spinStart = 0;
+  let spinDuration = 0;
+  let spinTarget = 0;
+
+  function pickColors(n){
+    const palette = [
+      '#FF6B6B','#FFD93D','#6BCB77','#4D96FF','#B388EB','#FF8FA3','#FFC0CB','#FFB166','#7EE8FA','#9AE66E'
+    ];
+    let out = [];
+    for(let i=0;i<n;i++) out.push(palette[i % palette.length]);
+    return out;
+  }
+
+  function buildSegments(){
+    names = names.map(s=>s.trim()).filter(Boolean);
+    if(names.length === 0){
+      segments = []; colors = []; drawEmpty(); return;
+    }
+    segments = names.slice();
+    colors = pickColors(segments.length);
+    drawWheel();
+  }
+
+  function drawEmpty(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#071022';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = '#9aa4b2';
+    ctx.font = '18px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('No values. Enter names and press Generate.', canvas.width/2, canvas.height/2);
+  }
+
+  function drawWheel(){
+    const cx = canvas.width/2, cy = canvas.height/2, r = Math.min(cx,cy) - 6;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const count = segments.length;
+    const segAngle = (Math.PI*2)/count;
+    // draw slices
+    for(let i=0;i<count;i++){
+      const start = angle + i*segAngle;
+      const end = start + segAngle;
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,r,start,end);
+      ctx.closePath();
+      ctx.fillStyle = colors[i];
+      ctx.fill();
+      // stroke
+      ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.stroke();
+      // text
+      ctx.save();
+      ctx.translate(cx,cy);
+      const mid = (start+end)/2;
+      ctx.rotate(mid);
+      ctx.fillStyle = '#0b1020';
+      ctx.font = Math.max(12, r*0.09) + 'px Arial';
+      ctx.textAlign = 'right';
+      ctx.fillText(segments[i], r*0.86, 0);
+      ctx.restore();
+    }
+    // draw center circle small
+    ctx.beginPath(); ctx.arc(cx,cy, r*0.18, 0, Math.PI*2); ctx.fillStyle = '#071022'; ctx.fill();
+    // draw pointer at top
+    ctx.beginPath(); ctx.moveTo(cx, cy - r - 8); ctx.lineTo(cx-12, cy - r + 22); ctx.lineTo(cx+12, cy - r + 22); ctx.closePath();
+    ctx.fillStyle = '#ffb703'; ctx.fill();
+  }
+
+  function spin(){
+    if(spinning || segments.length === 0) return;
+    spinning = true;
+    const count = segments.length;
+    const segAngle = (Math.PI*2)/count;
+    // choose random target index, with some randomness
+    const targetIndex = Math.floor(Math.random()*count);
+    // compute target angle so that targetIndex lands at pointer (top). pointer angle = -Math.PI/2
+    const pointerAngle = -Math.PI/2;
+    const targetAngle = pointerAngle - (targetIndex * segAngle) - segAngle/2;
+    // add several full rotations to make it spin longer than usual
+    const extraRotations = 5 + Math.floor(Math.random()*3); // 5-7 full spins
+    const finalAngle = targetAngle + extraRotations * Math.PI * 2;
+    spinStart = performance.now();
+    spinDuration = 7000 + Math.floor(Math.random()*3000); // 7-10 seconds
+    spinTarget = finalAngle;
+    requestAnimationFrame(animate);
+  }
+
+  function easeOutCubic(t){ return 1 - Math.pow(1-t,3); }
+
+  function animate(now){
+    const elapsed = now - spinStart;
+    const t = Math.min(1, elapsed / spinDuration);
+    const eased = easeOutCubic(t);
+    angle = spinTarget * eased;
+    drawWheel();
+    if(t < 1){
+      requestAnimationFrame(animate);
+    } else {
+      spinning = false;
+      // determine selected index
+      const count = segments.length;
+      const segAngle = (Math.PI*2)/count;
+      // normalize angle so pointerAngle (-PI/2) corresponds to index
+      const final = angle;
+      // compute index at pointer
+      const pointerAngle = -Math.PI/2;
+      // for each segment i, segment start = i*segAngle; we check which matches
+      // compute angle at top: theta = (pointerAngle - final) normalized to [0,2PI)
+      let theta = pointerAngle - final;
+      theta = ((theta % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);
+      const index = Math.floor(theta / segAngle);
+      const chosen = segments[index % segments.length];
+      showResult(chosen);
+    }
+  }
+
+  function showResult(name){
+    resultText.textContent = name;
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden','false');
+    lastSelected.textContent = 'Last selected: ' + name;
+  }
+
+  // UI handlers
+  generateBtn.addEventListener('click', ()=>{
+    const text = namesInput.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    names = text;
+    buildSegments();
+  });
+  clearBtn.addEventListener('click', ()=>{
+    namesInput.value = '';
+    names = [];
+    buildSegments();
+  });
+  resetBtn.addEventListener('click', ()=>{
+    angle = 0;
+    names = [];
+    segments = [];
+    colors = [];
+    namesInput.value = '';
+    drawEmpty();
+    lastSelected.textContent = 'Last selected: —';
+  });
+  spinBtn.addEventListener('click', spin);
+  closeOverlay.addEventListener('click', ()=>{
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden','true');
+  });
+
+  // initial
+  drawEmpty();
+
+  // service worker register
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  }
+
+  // resize canvas to device pixel ratio
+  function resizeCanvas(){
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    drawWheel();
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+})();</script>
+</body>
+</html>
