@@ -15,14 +15,18 @@ const selectedNameEl = document.getElementById('selected-name');
 const closeOverlay = document.getElementById('close-overlay');
 const lastSelectedEl = document.getElementById('last-selected');
 
+// Responsive wheel for small screens (iPhone-friendly)
 function resizeWheel() {
-  const availableHeight = window.innerHeight - document.querySelector('.input-container').offsetHeight - 150;
-  wheelCanvas.width = availableHeight;
-  wheelCanvas.height = availableHeight;
+  const maxWidth = window.innerWidth * 0.9;
+  const maxHeight = window.innerHeight * 0.6;
+  const size = Math.min(maxWidth, maxHeight);
+  wheelCanvas.width = size;
+  wheelCanvas.height = size;
   drawWheel();
 }
 window.addEventListener('resize', resizeWheel);
 
+// Generate rainbow colors
 function generateColors(n) {
   colors = [];
   for (let i = 0; i < n; i++) {
@@ -30,13 +34,18 @@ function generateColors(n) {
   }
 }
 
+// Draw wheel and arrow
 function drawWheel() {
-  if (!names.length) return;
   const len = names.length;
+  if (!len) {
+    ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height);
+    drawArrow();
+    return;
+  }
+
   const arc = (2 * Math.PI) / len;
   const radius = wheelCanvas.width / 2;
-
-  ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+  ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height);
 
   for (let i = 0; i < len; i++) {
     ctx.beginPath();
@@ -47,23 +56,43 @@ function drawWheel() {
 
     ctx.save();
     ctx.translate(radius, radius);
-    ctx.rotate(i * arc + arc / 2);
+    ctx.rotate(i * arc + arc/2);
     ctx.textAlign = "right";
     ctx.fillStyle = "#fff";
     ctx.font = `${Math.floor(radius/10)}px Arial`;
     ctx.fillText(names[i], radius - 10, 5);
     ctx.restore();
   }
+
+  drawArrow();
 }
 
+// Arrow pointing to top
+function drawArrow() {
+  const r = wheelCanvas.width / 2;
+  ctx.fillStyle = '#ff5722';
+  ctx.beginPath();
+  ctx.moveTo(r - 10, 0);
+  ctx.lineTo(r + 10, 0);
+  ctx.lineTo(r, 20);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// Spin wheel with validation
 function spinWheel() {
-  if (isSpinning || names.length === 0) return;
+  if (isSpinning) return;
+  if (names.length < 2) {
+    alert("Please enter at least 2 names to spin.");
+    return;
+  }
+
   isSpinning = true;
 
   const spins = Math.floor(Math.random() * 5 + 10);
   const randomIndex = Math.floor(Math.random() * names.length);
   const arc = 2 * Math.PI / names.length;
-  const targetAngle = (2 * Math.PI * spins) + (arc * randomIndex) + arc / 2;
+  const targetAngle = (2 * Math.PI * spins) + (arc * randomIndex) + arc/2;
 
   const duration = 4000;
   const start = performance.now();
@@ -74,7 +103,7 @@ function spinWheel() {
     const angle = targetAngle * easeOutQuad(progress);
 
     ctx.save();
-    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+    ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height);
     ctx.translate(wheelCanvas.width/2, wheelCanvas.height/2);
     ctx.rotate(angle);
     ctx.translate(-wheelCanvas.width/2, -wheelCanvas.height/2);
@@ -95,14 +124,19 @@ function spinWheel() {
 
 function easeOutQuad(t) { return t*(2-t); }
 
+// Generate button
 generateButton.addEventListener('click', () => {
   const input = namesInput.value.trim();
-  if (!input) return;
   names = input.split("\n").filter(n => n.trim() !== "");
+  if (names.length < 2) {
+    alert("Please enter at least 2 names.");
+    return;
+  }
   generateColors(names.length);
   resizeWheel();
 });
 
+// Clear button
 clearButton.addEventListener('click', () => {
   namesInput.value = "";
   names = [];
@@ -110,8 +144,19 @@ clearButton.addEventListener('click', () => {
   drawWheel();
 });
 
-resetButton.addEventListener('click', () => drawWheel());
+// Reset button
+resetButton.addEventListener('click', () => {
+  names = [];
+  colors = [];
+  drawWheel();
+  lastSelectedEl.textContent = "Last Selected: None";
+  overlay.style.display = 'none';
+});
+
+// Spin button
 spinButton.addEventListener('click', spinWheel);
+
+// Close overlay
 closeOverlay.addEventListener('click', () => overlay.style.display = 'none');
 
 resizeWheel();
