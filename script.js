@@ -48,21 +48,18 @@ function drawWheel() {
     const startAngle = i * arc;
     const endAngle = (i + 1) * arc;
 
-    const grad = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
-    grad.addColorStop(0, 'rgba(255,255,255,0.15)');
-    grad.addColorStop(0.4, colors[i]);
-    grad.addColorStop(1, colors[i]);
-
+    // Flat vivid color
+    ctx.fillStyle = colors[i];
     ctx.beginPath();
     ctx.moveTo(radius, radius);
     ctx.arc(radius, radius, radius, startAngle, endAngle);
     ctx.closePath();
-    ctx.fillStyle = grad;
     ctx.fill();
     ctx.strokeStyle = "#222";
     ctx.lineWidth = 2;
     ctx.stroke();
 
+    // Text with outline
     ctx.save();
     ctx.translate(radius, radius);
     ctx.rotate(startAngle + arc / 2);
@@ -76,14 +73,14 @@ function drawWheel() {
     ctx.restore();
   }
 
-  // Outer rim
+  // Outer ring
   ctx.beginPath();
   ctx.arc(radius, radius, radius, 0, 2 * Math.PI);
   ctx.strokeStyle = "#555";
   ctx.lineWidth = radius * 0.05;
   ctx.stroke();
 
-  // Inner rim
+  // Inner circle (small center)
   ctx.beginPath();
   ctx.arc(radius, radius, radius * 0.1, 0, 2 * Math.PI);
   ctx.strokeStyle = "#555";
