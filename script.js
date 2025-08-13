@@ -1,0 +1,117 @@
+let names = [];
+let colors = [];
+let lastSelected = null;
+let isSpinning = false;
+
+const wheelCanvas = document.getElementById('wheel');
+const ctx = wheelCanvas.getContext('2d');
+const spinButton = document.getElementById('spin-button');
+const generateButton = document.getElementById('generate-button');
+const clearButton = document.getElementById('clear-button');
+const resetButton = document.getElementById('reset-button');
+const namesInput = document.getElementById('names-input');
+const overlay = document.getElementById('overlay');
+const selectedNameEl = document.getElementById('selected-name');
+const closeOverlay = document.getElementById('close-overlay');
+const lastSelectedEl = document.getElementById('last-selected');
+
+function resizeWheel() {
+  const availableHeight = window.innerHeight - document.querySelector('.input-container').offsetHeight - 150;
+  wheelCanvas.width = availableHeight;
+  wheelCanvas.height = availableHeight;
+  drawWheel();
+}
+window.addEventListener('resize', resizeWheel);
+
+function generateColors(n) {
+  colors = [];
+  for (let i = 0; i < n; i++) {
+    colors.push(`hsl(${i * (360 / n)}, 70%, 50%)`);
+  }
+}
+
+function drawWheel() {
+  if (!names.length) return;
+  const len = names.length;
+  const arc = (2 * Math.PI) / len;
+  const radius = wheelCanvas.width / 2;
+
+  ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+
+  for (let i = 0; i < len; i++) {
+    ctx.beginPath();
+    ctx.moveTo(radius, radius);
+    ctx.arc(radius, radius, radius, i * arc, (i + 1) * arc);
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(radius, radius);
+    ctx.rotate(i * arc + arc / 2);
+    ctx.textAlign = "right";
+    ctx.fillStyle = "#fff";
+    ctx.font = `${Math.floor(radius/10)}px Arial`;
+    ctx.fillText(names[i], radius - 10, 5);
+    ctx.restore();
+  }
+}
+
+function spinWheel() {
+  if (isSpinning || names.length === 0) return;
+  isSpinning = true;
+
+  const spins = Math.floor(Math.random() * 5 + 10);
+  const randomIndex = Math.floor(Math.random() * names.length);
+  const arc = 2 * Math.PI / names.length;
+  const targetAngle = (2 * Math.PI * spins) + (arc * randomIndex) + arc / 2;
+
+  const duration = 4000;
+  const start = performance.now();
+
+  function animate(time) {
+    const elapsed = time - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const angle = targetAngle * easeOutQuad(progress);
+
+    ctx.save();
+    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+    ctx.translate(wheelCanvas.width/2, wheelCanvas.height/2);
+    ctx.rotate(angle);
+    ctx.translate(-wheelCanvas.width/2, -wheelCanvas.height/2);
+    drawWheel();
+    ctx.restore();
+
+    if (progress < 1) requestAnimationFrame(animate);
+    else {
+      isSpinning = false;
+      lastSelected = names[randomIndex];
+      lastSelectedEl.textContent = "Last Selected: " + lastSelected;
+      selectedNameEl.textContent = lastSelected;
+      overlay.style.display = 'flex';
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function easeOutQuad(t) { return t*(2-t); }
+
+generateButton.addEventListener('click', () => {
+  const input = namesInput.value.trim();
+  if (!input) return;
+  names = input.split("\n").filter(n => n.trim() !== "");
+  generateColors(names.length);
+  resizeWheel();
+});
+
+clearButton.addEventListener('click', () => {
+  namesInput.value = "";
+  names = [];
+  colors = [];
+  drawWheel();
+});
+
+resetButton.addEventListener('click', () => drawWheel());
+spinButton.addEventListener('click', spinWheel);
+closeOverlay.addEventListener('click', () => overlay.style.display = 'none');
+
+resizeWheel();
