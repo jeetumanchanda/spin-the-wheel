@@ -15,10 +15,11 @@ const selectedNameEl = document.getElementById('selected-name');
 const closeOverlay = document.getElementById('close-overlay');
 const lastSelectedEl = document.getElementById('last-selected');
 
-// Responsive wheel for small screens (iPhone-friendly)
+// Responsive wheel for small screens
 function resizeWheel() {
+  const controlsHeight = document.querySelector('.input-container').offsetHeight + 80;
   const maxWidth = window.innerWidth * 0.9;
-  const maxHeight = window.innerHeight * 0.6;
+  const maxHeight = window.innerHeight - controlsHeight;
   const size = Math.min(maxWidth, maxHeight);
   wheelCanvas.width = size;
   wheelCanvas.height = size;
@@ -34,18 +35,14 @@ function generateColors(n) {
   }
 }
 
-// Draw wheel and arrow
+// Draw wheel segments
 function drawWheel() {
   const len = names.length;
-  if (!len) {
-    ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height);
-    drawArrow();
-    return;
-  }
+  const radius = wheelCanvas.width / 2;
+  ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+  if (!len) return;
 
   const arc = (2 * Math.PI) / len;
-  const radius = wheelCanvas.width / 2;
-  ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height);
 
   for (let i = 0; i < len; i++) {
     ctx.beginPath();
@@ -63,27 +60,13 @@ function drawWheel() {
     ctx.fillText(names[i], radius - 10, 5);
     ctx.restore();
   }
-
-  drawArrow();
 }
 
-// Arrow pointing to top
-function drawArrow() {
-  const r = wheelCanvas.width / 2;
-  ctx.fillStyle = '#ff5722';
-  ctx.beginPath();
-  ctx.moveTo(r - 10, 0);
-  ctx.lineTo(r + 10, 0);
-  ctx.lineTo(r, 20);
-  ctx.closePath();
-  ctx.fill();
-}
-
-// Spin wheel with validation
+// Spin wheel animation
 function spinWheel() {
   if (isSpinning) return;
   if (names.length < 2) {
-    alert("Please enter at least 2 names to spin.");
+    alert("Please enter at least 2 names.");
     return;
   }
 
@@ -103,7 +86,7 @@ function spinWheel() {
     const angle = targetAngle * easeOutQuad(progress);
 
     ctx.save();
-    ctx.clearRect(0,0,wheelCanvas.width,wheelCanvas.height);
+    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
     ctx.translate(wheelCanvas.width/2, wheelCanvas.height/2);
     ctx.rotate(angle);
     ctx.translate(-wheelCanvas.width/2, -wheelCanvas.height/2);
