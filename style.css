@@ -28,11 +28,13 @@ h2#last-selected {
   width: 100%;
   display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 canvas#wheel {
   max-width: 100%;
   height: auto;
+  display: block;
 }
 
 #wheel-container button#spin-button {
@@ -48,6 +50,19 @@ canvas#wheel {
   border-radius: 50%;
   cursor: pointer;
   z-index: 10;
+}
+
+#marker-arrow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 20px solid #ff5722;
+  z-index: 12;
 }
 
 .input-container {
