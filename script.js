@@ -15,7 +15,7 @@ const selectedNameEl = document.getElementById('selected-name');
 const closeOverlay = document.getElementById('close-overlay');
 const lastSelectedEl = document.getElementById('last-selected');
 
-// Resize wheel for viewport
+// Resize wheel
 function resizeWheel() {
   const controlsHeight = document.querySelector('.input-container').offsetHeight + 80;
   const maxWidth = window.innerWidth * 0.9;
@@ -27,15 +27,15 @@ function resizeWheel() {
 }
 window.addEventListener('resize', resizeWheel);
 
-// Generate colors
+// Generate bright colors
 function generateColors(n) {
   colors = [];
   for (let i = 0; i < n; i++) {
-    colors.push(`hsl(${i * (360 / n)}, 70%, 50%)`);
+    colors.push(`hsl(${i * (360 / n)}, 80%, 55%)`);
   }
 }
 
-// Draw 3D/embossed roulette-style wheel
+// Draw wheel with 3D gradient
 function drawWheel() {
   const len = names.length;
   const radius = wheelCanvas.width / 2;
@@ -48,11 +48,10 @@ function drawWheel() {
     const startAngle = i * arc;
     const endAngle = (i + 1) * arc;
 
-    // Radial gradient for 3D effect
-    const grad = ctx.createRadialGradient(radius, radius, radius*0.1, radius, radius, radius);
-    grad.addColorStop(0, 'rgba(255,255,255,0.2)'); // highlight
-    grad.addColorStop(0.3, colors[i]);
-    grad.addColorStop(1, 'rgba(0,0,0,0.3)'); // shadow
+    const grad = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
+    grad.addColorStop(0, 'rgba(255,255,255,0.15)');
+    grad.addColorStop(0.4, colors[i]);
+    grad.addColorStop(1, colors[i]);
 
     ctx.beginPath();
     ctx.moveTo(radius, radius);
@@ -64,10 +63,9 @@ function drawWheel() {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw text with outline
     ctx.save();
     ctx.translate(radius, radius);
-    ctx.rotate(startAngle + arc/2);
+    ctx.rotate(startAngle + arc / 2);
     ctx.textAlign = "right";
     ctx.font = `${Math.floor(radius / 8)}px Arial`;
     ctx.fillStyle = "#fff";
@@ -80,70 +78,67 @@ function drawWheel() {
 
   // Outer rim
   ctx.beginPath();
-  ctx.arc(radius, radius, radius, 0, 2*Math.PI);
+  ctx.arc(radius, radius, radius, 0, 2 * Math.PI);
   ctx.strokeStyle = "#555";
-  ctx.lineWidth = radius*0.05;
+  ctx.lineWidth = radius * 0.05;
   ctx.stroke();
 
   // Inner rim
   ctx.beginPath();
-  ctx.arc(radius, radius, radius*0.1, 0, 2*Math.PI);
+  ctx.arc(radius, radius, radius * 0.1, 0, 2 * Math.PI);
   ctx.strokeStyle = "#555";
-  ctx.lineWidth = radius*0.03;
+  ctx.lineWidth = radius * 0.03;
   ctx.stroke();
 }
 
-// Spin animation
+// Spin wheel with consistent segment
 function spinWheel() {
   if (isSpinning) return;
-  if (names.length < 2) {
-    alert("Please enter at least 2 names.");
-    return;
-  }
+  if (names.length < 2) { alert("Enter at least 2 names"); return; }
 
   isSpinning = true;
-  const spins = Math.floor(Math.random() * 5 + 10);
-  const randomIndex = Math.floor(Math.random() * names.length);
-  const arc = 2 * Math.PI / names.length;
-  const targetAngle = (2 * Math.PI * spins) + (arc * randomIndex) + arc/2;
+  const len = names.length;
+  const arc = 2 * Math.PI / len;
+
+  const selectedIndex = Math.floor(Math.random() * len);
+  const extraSpins = 5 + Math.floor(Math.random() * 5);
+  const totalRotation = (2 * Math.PI * extraSpins) + (len - selectedIndex - 0.5) * arc;
+
   const duration = 4000;
   const start = performance.now();
 
   function animate(time) {
     const elapsed = time - start;
     const progress = Math.min(elapsed / duration, 1);
-    const angle = targetAngle * easeOutQuad(progress);
+    const angle = totalRotation * easeOutQuad(progress);
 
     ctx.save();
     ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
-    ctx.translate(wheelCanvas.width/2, wheelCanvas.height/2);
+    ctx.translate(wheelCanvas.width / 2, wheelCanvas.height / 2);
     ctx.rotate(angle);
-    ctx.translate(-wheelCanvas.width/2, -wheelCanvas.height/2);
+    ctx.translate(-wheelCanvas.width / 2, -wheelCanvas.height / 2);
     drawWheel();
     ctx.restore();
 
     if (progress < 1) requestAnimationFrame(animate);
     else {
       isSpinning = false;
-      lastSelected = names[randomIndex];
-      lastSelectedEl.textContent = "Last Selected: " + lastSelected;
-      selectedNameEl.textContent = lastSelected;
+      const selectedName = names[selectedIndex];
+      lastSelected = selectedName;
+      lastSelectedEl.textContent = "Last Selected: " + selectedName;
+      selectedNameEl.textContent = selectedName;
       overlay.style.display = 'flex';
     }
   }
   requestAnimationFrame(animate);
 }
 
-function easeOutQuad(t) { return t*(2-t); }
+function easeOutQuad(t) { return t * (2 - t); }
 
-// Event listeners
 generateButton.addEventListener('click', () => {
   const input = namesInput.value.trim();
   names = input.split("\n").filter(n => n.trim() !== "");
-  if (names.length < 2) {
-    alert("Please enter at least 2 names.");
-    return;
-  }
+  if (names.length < 2) { alert("Enter at least 2 names"); return; }
   generateColors(names.length);
   resizeWheel();
 });
@@ -164,7 +159,6 @@ resetButton.addEventListener('click', () => {
 });
 
 spinButton.addEventListener('click', spinWheel);
-
 closeOverlay.addEventListener('click', () => overlay.style.display = 'none');
 
 resizeWheel();
