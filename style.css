@@ -32,12 +32,13 @@ h2#last-selected {
 }
 
 canvas#wheel {
-  max-width: 100%;
-  height: auto;
+  width: 400px;
+  height: 400px;
   display: block;
 }
 
-#wheel-container button#spin-button {
+#wheel-container button#spin-button,
+#wheel-container button {
   position: absolute;
   top: 50%;
   left: 50%;
