@@ -16,7 +16,7 @@ const closeOverlay = document.getElementById('close-overlay');
 const lastSelectedEl = document.getElementById('last-selected');
 
 // Fixed wheel size (smaller)
-const WHEEL_SIZE = 350;
+const WHEEL_SIZE = 300;
 wheelCanvas.width = WHEEL_SIZE;
 wheelCanvas.height = WHEEL_SIZE;
 
