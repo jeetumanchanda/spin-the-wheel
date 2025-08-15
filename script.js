@@ -15,16 +15,17 @@ const selectedNameEl = document.getElementById('selected-name');
 const closeOverlay = document.getElementById('close-overlay');
 const lastSelectedEl = document.getElementById('last-selected');
 
-// Fixed wheel size
-const WHEEL_SIZE = 400;
+// Fixed wheel size (smaller)
+const WHEEL_SIZE = 350;
 wheelCanvas.width = WHEEL_SIZE;
 wheelCanvas.height = WHEEL_SIZE;
 
-// Generate bright colors
+// Generate pastel colors
 function generateColors(n) {
   colors = [];
   for (let i = 0; i < n; i++) {
-    colors.push(`hsl(${i * (360 / n)}, 80%, 55%)`);
+    // HSL with pastel: lower saturation, higher lightness
+    colors.push(`hsl(${i * (360 / n)}, 60%, 85%)`);
   }
 }
 
