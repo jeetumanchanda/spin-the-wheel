@@ -32,9 +32,9 @@ h2#last-selected {
 }
 
 canvas#wheel {
-  width: 350px;
-  height: 350px;
   display: block;
+  max-width: 95%; /* optional: keeps it responsive on smaller screens */
+  height: auto;
 }
 
 #wheel-container button#spin-button,
