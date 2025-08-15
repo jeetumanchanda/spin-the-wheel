@@ -28,7 +28,7 @@ function generateColors(n) {
   }
 }
 
-// Draw flat, vibrant wheel
+// Draw wheel
 function drawWheel() {
   const len = names.length;
   const radius = WHEEL_SIZE / 2;
@@ -72,7 +72,7 @@ function drawWheel() {
   ctx.lineWidth = radius * 0.05;
   ctx.stroke();
 
-  // Inner circle (small center)
+  // Inner circle
   ctx.beginPath();
   ctx.arc(radius, radius, radius * 0.1, 0, 2 * Math.PI);
   ctx.strokeStyle = "#555";
@@ -80,7 +80,7 @@ function drawWheel() {
   ctx.stroke();
 }
 
-// Confetti effect
+// Confetti
 function createConfetti() {
   const count = 80;
   for (let i = 0; i < count; i++) {
@@ -96,13 +96,12 @@ function createConfetti() {
   }
 }
 
-// Confetti keyframes
-const style = document.createElement('style');
-style.innerHTML = `
+const styleEl = document.createElement('style');
+styleEl.innerHTML = `
 @keyframes fall {
   to { transform: translateY(${window.innerHeight + 20}px) rotate(360deg); opacity: 0; }
 }`;
-document.head.appendChild(style);
+document.head.appendChild(styleEl);
 
 function showOverlay(name) {
   selectedNameEl.textContent = name;
@@ -152,6 +151,7 @@ function spinWheel() {
 
 function easeOutQuad(t) { return t * (2 - t); }
 
+// Button listeners
 generateButton.addEventListener('click', () => {
   const input = namesInput.value.trim();
   names = input.split("\n").filter(n => n.trim() !== "");
