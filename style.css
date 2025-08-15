@@ -32,8 +32,8 @@ h2#last-selected {
 }
 
 canvas#wheel {
-  width: 400px;
-  height: 400px;
+  width: 350px;
+  height: 350px;
   display: block;
 }
 
