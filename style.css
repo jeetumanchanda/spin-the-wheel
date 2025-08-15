@@ -100,17 +100,27 @@ footer {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.8);
-  justify-content: center;
-  align-items: center;
+  background: linear-gradient(135deg, #ffd1dc, #cde7ff, #d4ffc8);
+  justify-content: center;  /* center horizontally */
+  align-items: center;      /* center vertically */
+  display: flex;            /* needed for flex centering */
+  overflow: hidden;
 }
 
 .overlay-content {
-  background: #1e1e1e;
-  padding: 30px;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 30px 50px;
+  border-radius: 20px;
   position: relative;
   text-align: center;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+  animation: popIn 0.5s ease-out;
+  max-width: 90%;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 #close-overlay {
@@ -119,4 +129,22 @@ footer {
   right: 15px;
   font-size: 1.5em;
   cursor: pointer;
+  color: #555;
+  transition: color 0.2s;
+}
+
+#close-overlay:hover {
+  color: #000;
+}
+
+/* Confetti style remains the same */
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background-color: #fff;
+  opacity: 0.8;
+  z-index: 9999;
+  pointer-events: none;
+  border-radius: 50%;
 }
