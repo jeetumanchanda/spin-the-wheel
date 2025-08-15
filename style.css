@@ -25,15 +25,18 @@ h2#last-selected {
 
 .wheel-container {
   position: relative;
+  width: 325px;      /* fixed wheel container */
+  height: 325px;     /* same as width to keep square */
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 canvas#wheel {
+  width: 95%;       /* fill the container */
+  height: 95%;      /* fill the container */
   display: block;
-  width: 350px;
-  height: 350px;
+  object-fit: contain; /* prevent stretching */
 }
 
 #wheel-container button#spin-button {
