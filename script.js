@@ -15,17 +15,10 @@ const selectedNameEl = document.getElementById('selected-name');
 const closeOverlay = document.getElementById('close-overlay');
 const lastSelectedEl = document.getElementById('last-selected');
 
-// Resize wheel
-function resizeWheel() {
-  const controlsHeight = document.querySelector('.input-container').offsetHeight + 80;
-  const maxWidth = window.innerWidth * 0.9;
-  const maxHeight = window.innerHeight - controlsHeight;
-  const size = Math.min(maxWidth, maxHeight);
-  wheelCanvas.width = size;
-  wheelCanvas.height = size;
-  drawWheel();
-}
-window.addEventListener('resize', resizeWheel);
+// Fixed wheel size
+const WHEEL_SIZE = 400;
+wheelCanvas.width = WHEEL_SIZE;
+wheelCanvas.height = WHEEL_SIZE;
 
 // Generate bright colors
 function generateColors(n) {
@@ -35,11 +28,11 @@ function generateColors(n) {
   }
 }
 
-// Draw wheel with 3D gradient
+// Draw flat, vibrant wheel
 function drawWheel() {
   const len = names.length;
-  const radius = wheelCanvas.width / 2;
-  ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+  const radius = WHEEL_SIZE / 2;
+  ctx.clearRect(0, 0, WHEEL_SIZE, WHEEL_SIZE);
   if (!len) return;
 
   const arc = (2 * Math.PI) / len;
@@ -48,7 +41,6 @@ function drawWheel() {
     const startAngle = i * arc;
     const endAngle = (i + 1) * arc;
 
-    // Flat vivid color
     ctx.fillStyle = colors[i];
     ctx.beginPath();
     ctx.moveTo(radius, radius);
@@ -110,10 +102,10 @@ function spinWheel() {
     const angle = totalRotation * easeOutQuad(progress);
 
     ctx.save();
-    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
-    ctx.translate(wheelCanvas.width / 2, wheelCanvas.height / 2);
+    ctx.clearRect(0, 0, WHEEL_SIZE, WHEEL_SIZE);
+    ctx.translate(WHEEL_SIZE / 2, WHEEL_SIZE / 2);
     ctx.rotate(angle);
-    ctx.translate(-wheelCanvas.width / 2, -wheelCanvas.height / 2);
+    ctx.translate(-WHEEL_SIZE / 2, -WHEEL_SIZE / 2);
     drawWheel();
     ctx.restore();
 
@@ -137,7 +129,7 @@ generateButton.addEventListener('click', () => {
   names = input.split("\n").filter(n => n.trim() !== "");
   if (names.length < 2) { alert("Enter at least 2 names"); return; }
   generateColors(names.length);
-  resizeWheel();
+  drawWheel();
 });
 
 clearButton.addEventListener('click', () => {
@@ -158,4 +150,5 @@ resetButton.addEventListener('click', () => {
 spinButton.addEventListener('click', spinWheel);
 closeOverlay.addEventListener('click', () => overlay.style.display = 'none');
 
-resizeWheel();
+// Initial draw
+drawWheel();
