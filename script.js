@@ -1,147 +1,181 @@
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #121212;
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  flex-direction: column;
-  min-height: 100vh;
-  padding: 10px;
-  box-sizing: border-box;
+let names = [];
+let colors = [];
+let lastSelected = null;
+let isSpinning = false;
+
+const wheelCanvas = document.getElementById('wheel');
+const ctx = wheelCanvas.getContext('2d');
+const spinButton = document.getElementById('spin-button');
+const generateButton = document.getElementById('generate-button');
+const clearButton = document.getElementById('clear-button');
+const resetButton = document.getElementById('reset-button');
+const namesInput = document.getElementById('names-input');
+const overlay = document.getElementById('overlay');
+const selectedNameEl = document.getElementById('selected-name');
+const closeOverlay = document.getElementById('close-overlay');
+const lastSelectedEl = document.getElementById('last-selected');
+
+// Fixed wheel size
+const WHEEL_SIZE = 350;
+wheelCanvas.width = WHEEL_SIZE;
+wheelCanvas.height = WHEEL_SIZE;
+
+// Generate pastel colors
+function generateColors(n) {
+  colors = [];
+  for (let i = 0; i < n; i++) {
+    colors.push(`hsl(${i * (360 / n)}, 60%, 85%)`);
+  }
 }
 
-.container {
-  text-align: center;
-  width: 95%;
-  max-width: 500px;
-  margin: 0 auto;
+// Draw flat, vibrant wheel
+function drawWheel() {
+  const len = names.length;
+  const radius = WHEEL_SIZE / 2;
+  ctx.clearRect(0, 0, WHEEL_SIZE, WHEEL_SIZE);
+  if (!len) return;
+
+  const arc = (2 * Math.PI) / len;
+
+  for (let i = 0; i < len; i++) {
+    const startAngle = i * arc;
+    const endAngle = (i + 1) * arc;
+
+    ctx.fillStyle = colors[i];
+    ctx.beginPath();
+    ctx.moveTo(radius, radius);
+    ctx.arc(radius, radius, radius, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#222";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Text with outline
+    ctx.save();
+    ctx.translate(radius, radius);
+    ctx.rotate(startAngle + arc / 2);
+    ctx.textAlign = "right";
+    ctx.font = `${Math.floor(radius / 8)}px Arial`;
+    ctx.fillStyle = "#000";
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 2;
+    ctx.strokeText(names[i], radius - 10, 5);
+    ctx.fillText(names[i], radius - 10, 5);
+    ctx.restore();
+  }
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius, 0, 2 * Math.PI);
+  ctx.strokeStyle = "#555";
+  ctx.lineWidth = radius * 0.05;
+  ctx.stroke();
+
+  // Inner circle (small center)
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius * 0.1, 0, 2 * Math.PI);
+  ctx.strokeStyle = "#555";
+  ctx.lineWidth = radius * 0.03;
+  ctx.stroke();
 }
 
-h2#last-selected {
-  margin-bottom: 10px;
+// Confetti effect
+function createConfetti() {
+  const count = 80;
+  for (let i = 0; i < count; i++) {
+    const confetti = document.createElement('div');
+    confetti.classList.add('confetti');
+    confetti.style.left = Math.random() * window.innerWidth + 'px';
+    confetti.style.top = '-10px';
+    confetti.style.backgroundColor = `hsl(${Math.random()*360}, 70%, 80%)`;
+    confetti.style.width = confetti.style.height = 5 + Math.random()*5 + 'px';
+    confetti.style.animation = `fall ${2 + Math.random()*3}s linear forwards`;
+    overlay.appendChild(confetti);
+    setTimeout(() => confetti.remove(), 5000);
+  }
 }
 
-.wheel-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+// Confetti keyframes
+const style = document.createElement('style');
+style.innerHTML = `
+@keyframes fall {
+  to { transform: translateY(${window.innerHeight + 20}px) rotate(360deg); opacity: 0; }
+}`;
+document.head.appendChild(style);
+
+function showOverlay(name) {
+  selectedNameEl.textContent = name;
+  overlay.style.display = 'flex';
+  createConfetti();
 }
 
-canvas#wheel {
-  display: block;
-  width: 350px;
-  height: 350px;
+// Spin wheel
+function spinWheel() {
+  if (isSpinning) return;
+  if (names.length < 2) { alert("Enter at least 2 names"); return; }
+
+  isSpinning = true;
+  const len = names.length;
+  const arc = 2 * Math.PI / len;
+  const selectedIndex = Math.floor(Math.random() * len);
+  const extraSpins = 5 + Math.floor(Math.random() * 5);
+  const totalRotation = (2 * Math.PI * extraSpins) + (len - selectedIndex - 0.5) * arc;
+
+  const duration = 4000;
+  const start = performance.now();
+
+  function animate(time) {
+    const elapsed = time - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const angle = totalRotation * easeOutQuad(progress);
+
+    ctx.save();
+    ctx.clearRect(0, 0, WHEEL_SIZE, WHEEL_SIZE);
+    ctx.translate(WHEEL_SIZE / 2, WHEEL_SIZE / 2);
+    ctx.rotate(angle);
+    ctx.translate(-WHEEL_SIZE / 2, -WHEEL_SIZE / 2);
+    drawWheel();
+    ctx.restore();
+
+    if (progress < 1) requestAnimationFrame(animate);
+    else {
+      isSpinning = false;
+      const selectedName = names[selectedIndex];
+      lastSelected = selectedName;
+      lastSelectedEl.textContent = "Last Selected: " + selectedName;
+      showOverlay(selectedName);
+    }
+  }
+  requestAnimationFrame(animate);
 }
 
-#wheel-container button#spin-button,
-#wheel-container button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #ff5722;
-  border: none;
-  color: white;
-  font-size: 1.2em;
-  padding: 15px 30px;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 10;
-}
+function easeOutQuad(t) { return t * (2 - t); }
 
-.input-container {
-  margin-top: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+generateButton.addEventListener('click', () => {
+  const input = namesInput.value.trim();
+  names = input.split("\n").filter(n => n.trim() !== "");
+  if (names.length < 2) { alert("Enter at least 2 names"); return; }
+  generateColors(names.length);
+  drawWheel();
+});
 
-textarea#names-input {
-  width: 100%;
-  height: 100px;
-  border-radius: 8px;
-  border: none;
-  padding: 10px;
-  resize: vertical;
-}
+clearButton.addEventListener('click', () => {
+  namesInput.value = "";
+  names = [];
+  colors = [];
+  drawWheel();
+});
 
-.buttons-inline {
-  display: flex;
-  gap: 5px;
-  justify-content: center;
-}
+resetButton.addEventListener('click', () => {
+  names = [];
+  colors = [];
+  drawWheel();
+  lastSelectedEl.textContent = "Last Selected: None";
+  overlay.style.display = 'none';
+});
 
-button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.95em;
-}
+spinButton.addEventListener('click', spinWheel);
+closeOverlay.addEventListener('click', () => overlay.style.display = 'none');
 
-#generate-button { background-color: #4caf50; color: white; }
-#clear-button { background-color: #f44336; color: white; }
-#reset-button { background-color: #2196f3; color: white; }
-
-footer {
-  margin-top: 15px;
-  font-size: 0.8em;
-  color: #888;
-}
-
-#overlay {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #ffd1dc, #cde7ff, #d4ffc8);
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-
-.overlay-content {
-  background: rgba(255,255,255,0.85);
-  padding: 30px 50px;
-  border-radius: 20px;
-  position: relative;
-  text-align: center;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
-  animation: popIn 0.5s ease-out;
-}
-
-@keyframes popIn {
-  0% { transform: scale(0.5); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-#close-overlay {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  font-size: 1.5em;
-  cursor: pointer;
-  color: #555;
-  transition: color 0.2s;
-}
-
-#close-overlay:hover {
-  color: #000;
-}
-
-/* Confetti style */
-.confetti {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background-color: #fff;
-  opacity: 0.8;
-  z-index: 9999;
-  pointer-events: none;
-  border-radius: 50%;
-}
+drawWheel();
